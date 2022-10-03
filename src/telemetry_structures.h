@@ -3,7 +3,7 @@
 
 #define telemetry_structures
 
-typedef struct trackingMetricsType{
+struct trackingMetricsType{
        float bearing;       // deg
        float range;         // m
        float elevation;     // deg
@@ -11,7 +11,7 @@ typedef struct trackingMetricsType{
        float TrackCommand;         // deg
 };
 
-typedef struct  motionMetricsType {
+struct  motionMetricsType {
        long VelX, VelY, VelZ;
        int AccelX, AccelY, AccelZ;
        float Theta, Phi, Zeta;
@@ -20,7 +20,7 @@ typedef struct  motionMetricsType {
 };
 
 // Remote station parameters derived from gnss
-typedef struct gnssMetricsType {
+struct gnssMetricsType {
        unsigned int lockStatus;
        long Lat;           // 1e-7 deg
        long Lon;           // 1e-7 deg
@@ -41,7 +41,7 @@ typedef struct gnssMetricsType {
        unsigned char newdata;  // boolean used to indicate data has been updated
 }; 
 
-typedef struct PacketDetailsType {
+struct PacketDetailsType {
     unsigned char type;
     unsigned int sourceID;
     uint16_t    targetID;
@@ -54,8 +54,33 @@ typedef struct PacketDetailsType {
     unsigned char payload[256];
 };
 
+struct telemetryConfigurationType {
+       unsigned int deviceID;                      // unique 16bit ID
+       unsigned char DeviceType;                   // 1: Flight computer
+                                                   // 2. Base station
+                                                   // 3: tracker
+                                                   // 4: slave node
+                                                   // 255: unconfigured
+       unsigned char OBI2CEEPromAvailable;
+       unsigned char OBAccelPolarity;
+       unsigned char OBAccelRange;
+       unsigned char AccelAvailable;
+       unsigned char MagAvailable;
+       unsigned char GyroAvailable;
+       unsigned char gnssAvailable;
+       unsigned char radioAvailable;
+       unsigned char allowRemoteCommands;
+       unsigned int  TransmitPeriod;                // time between transmissions - units 100ms, 2 bytes
+
+       unsigned char Mode;                         // 0 - Rx only
+                                                   // 1 - Simple Modem ie radio <-> UART bridge
+                                                   // 2 - GPS transponder
+                                                   // 3 - test beacon
+                                                   // 4 - base station
+                                                   // 5 - ground station mobile
+};
 // System structure - contains information relating to identity, product type etc
-typedef struct  systemType {
+struct  systemType {
        char Name[20];
        unsigned int identity;
        unsigned char uniqueID64[65];

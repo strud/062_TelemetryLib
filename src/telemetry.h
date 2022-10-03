@@ -1,7 +1,7 @@
 #define telemetry
 
 #include "telemetry_structures.h"
-#include "generic_system_config.h"
+#include "radio_structs.h"
 
 //------------------------------------------------------------------------------
 // Radio Packet types (constants)
@@ -53,10 +53,10 @@
 #define PAC_CMD_INITIALISE            3
 #define PAC_CMD_SET_OFFSET            4
 #define PAC_CMD_SET_SCALE             5
-#define PAC_CMD_RADIO_POWER_INC+      10
-#define PAC_CMD_RADIO_POWER_INC-      11
-#define PAC_CMD_RADIO_CHANNEL_INC+    20
-#define PAC_CMD_RADIO_CHANNEL_INC-    21
+#define PAC_CMD_RADIO_POWER_INC_POS   10
+#define PAC_CMD_RADIO_POWER_INC_NEG   11
+#define PAC_CMD_RADIO_CHANNEL_INC_POS 20
+#define PAC_CMD_RADIO_CHANNEL_INC_NEG 21
 
 #ifndef USE_INTERNAL_PACKET_HANDLERS
 

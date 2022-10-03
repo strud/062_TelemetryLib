@@ -11,7 +11,7 @@
 // the packet payload is generated from
 //------------------------------------------------------------------------------
 
-void BuildRadioPacket(PacketDetailsType *Packet, telemetryConfigurationType *System, uint16_t target)
+void BuildRadioPacket(packetDetailsType *Packet, telemetryConfigurationType *System, uint16_t target)
 {   unsigned char ctemp;
     unsigned char * p_ctemp;
     long lpactemp, ltemp;

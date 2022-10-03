@@ -1,12 +1,6 @@
 // packet related data structures
 // Common definitions used across multiple projects
 
-// rev 0.1  9-7-2016 CDS
-// Copy existing structures from Rider tracker base station
-#ifndef gnss_structures
-   #include "gnss_structures.h"
-#endif
-
 #define radio_structs
 
 #define RADIO_BAND1_LOWER_F    413
@@ -23,7 +17,7 @@
 #define RADIO_BAND4_UPPER_F    929
 
 
-typedef struct radioModemType {
+struct radioModemType {
     unsigned char TransmitEnable;               // 1 : Enable, any other value - disabled
     unsigned char RadioEnable;
     unsigned char DeviceModel;
@@ -37,7 +31,7 @@ typedef struct radioModemType {
 };
     
 
-typedef struct  LinkStatsType {
+struct  LinkStatsType {
         float local_rssi_average;
         float remote_rssi_average;
         float link_margin_average;
