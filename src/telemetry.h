@@ -58,6 +58,11 @@
 #define PAC_CMD_RADIO_CHANNEL_INC_POS 20
 #define PAC_CMD_RADIO_CHANNEL_INC_NEG 21
 
+// defines used for calcs
+#define WALKING_PACE_THRESHOLD  0.75    // m/s
+
+
+
 #ifndef USE_INTERNAL_PACKET_HANDLERS
 
 void BuildRadioPacket(PacketDetailsType *Packet, telemetryConfigurationType *System);

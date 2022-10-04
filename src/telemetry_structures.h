@@ -3,14 +3,6 @@
 
 #define telemetry_structures
 
-struct trackingMetricsType{
-       float bearing;       // deg
-       float range;         // m
-       float elevation;     // deg
-       float bearingOffset; // deg
-       float TrackCommand;         // deg
-};
-
 struct  motionMetricsType {
        long VelX, VelY, VelZ;
        int AccelX, AccelY, AccelZ;
@@ -26,6 +18,8 @@ struct gnssMetricsType {
        long Lon;           // 1e-7 deg
        float fLat;         // deg
        float fLon;         // deg
+       float previousfLat; // deg
+       float previousfLon; // deg
        long Alt;           // mm
        long Heading;       // units 1e-5 deg
        float fHeading;     // deg
@@ -44,7 +38,7 @@ struct gnssMetricsType {
 struct PacketDetailsType {
     unsigned char type;
     unsigned int sourceID;
-    uint16_t    targetID;
+    unsigned int targetID;
     unsigned char length;
     unsigned char rssi;
     unsigned int checksum;
@@ -93,4 +87,22 @@ struct  systemType {
        gnssMetricsType gnssMetrics;
        motionMetricsType motioniMetrics;
        telemetryConfigurationType configuration;
+};
+
+struct trackingMetricsType {
+       float bearing;       // deg
+       float magHeading;    // deg
+       float gnssHeading;   // deg
+       float newGnssHeading;   // deg
+       unsigned long consecSampleCountAboveThresh; // number of gnss consecutive samples where ground speed > 2km/h
+       char gnssHeadingValid;
+       float localGroundSpeed;  // m/s
+       float range;         // m
+       float elevation;     // deg
+       float bearingOffset; // deg
+       float TrackCommand;         // deg
+       float timeDelta;     // 
+       float bearingRate;   // deg/s
+       float elevationRate; // deg/s
+       float rangeRate;     // m/s
 };
