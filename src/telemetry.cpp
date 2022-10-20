@@ -1,7 +1,8 @@
 
 //#include "generic_system_config.h"
-#include "telemetry_structures.h"
+#include <Arduino.h>
 #include "telemetry.h"
+#define byte  uint8_t
 
 //------------------------------------------------------------------------------
 // BuildRadioPacket
@@ -12,32 +13,31 @@
 // the packet payload is generated from
 //------------------------------------------------------------------------------
 
-void BuildRadioPacket(packetDetailsType *Packet, telemetryConfigurationType *System, short int target)
+unsigned int BuildRadioPacket(packetDetailsType *Packet, systemType *System, short int target)
 {   unsigned char ctemp;
     unsigned char * p_ctemp;
     long lpactemp, ltemp;
     int i, itemp;
-    float f_temp;
-    unsigned int utemp;
+    float ftemp;
+    unsigned int utemp, index;
 
     for (i=0;i<256;i++) Packet->payload[i]=0; // blast old packet away
     //-------------------------------------------------------------------
     // Common bytes for all types
-    p_ctemp = &System->identity;        // Identity of source system
-    Packet->payload[0]= p_ctemp[0];
-    Packet->payload[1]= p_ctemp[1];
-    p_ctemp = &target;                  // Identity of target system
-    Packet->payload[2]= p_ctemp[0];
-    Packet->payload[3]= p_ctemp[1];
-    Packet->payload[4] = Packet->Type;  // First byte describes the type of packet
-
+    index=0;
+    memcpy(&Packet->payload[index], (unsigned char*)(&System->identity), 2); // Identity of source system
+    index+=2;
+    memcpy(&Packet->payload[index], (unsigned char*)(&target), 2);   // Identity of target system
+    index+=2;
+    memcpy(&Packet->payload[index], (unsigned char*)(&Packet->type), 1); // First byte describes the type of packet
+    index+=1;
     //-------------------------------------------------------------------
 
-    switch (Packet->Type) {
+    switch (Packet->type) {
 
      case PAC_TYPE_COMMAND : {
-          // Tell the remote station to do something.....
-          // Format : LSB first
+           // Tell the remote station to do something.....
+           // Format : LSB first
            // Description      bytes index     type         units
            // command          2    3,4        int          none
            // argument1        2    5,6        int
@@ -49,100 +49,67 @@ void BuildRadioPacket(packetDetailsType *Packet, telemetryConfigurationType *Sys
      }
      case PAC_TYPE_ROCKET: {
 
-   // Description      bytes           type         units
-     
-     // Altitude         2    0,1        int          100ft
-     ltemp = System->gnssMetrics.altitude;   
-     itemp = (int)ltemp;  // hMSL units mm
-     p_ctemp = &itemp;
-     Packet->payload[5]= p_ctemp[0];
-     Packet->payload[6]= p_ctemp[1];
-
-     // Lattitude        4    26,27,28,29 float       deg e-7
-     //p_ctemp = &gps_lat;
-     p_ctemp = System->gnss->Lat;
-//     for (i=0;i<4;i++) pacBuff[i+26] = p_ctemp[i];
-     pacBuff[26] = p_ctemp[0];
-     pacBuff[27] = p_ctemp[1];
-     pacBuff[28] = p_ctemp[2];
-     pacBuff[29] = p_ctemp[3];
-
-     // Longitude        4    30,31,32,33 float       deg e-7
-//     p_ctemp = &gps_long;
-     p_ctemp = System->gnss->Lon;
-//     for (i=0;i<4;i++) pacBuff[i+30] = p_ctemp[i];
-     pacBuff[30] = p_ctemp[0];
-     pacBuff[31] = p_ctemp[1];
-     pacBuff[32] = p_ctemp[2];
-     pacBuff[33] = p_ctemp[3];
-
-     // Satellites       1    34          byte        none
-     pacBuff[34]= System->gnss->satellites;
-     // Lock             1    35          byte        boolean
-     pacBuff[35] = System->gnss->lockStatus;
-
-     // VBus             2    36,37       int         mV
-     pacBuff[36]=0;
-
-     // Continuity status
-     pacBuff[37]=0;
-
-     // GPS speed (magnitude of vector sum)           m/s
-     ltemp = System->gnss->velocity/100;
-     itemp = (int)ltemp;
-     p_ctemp = &itemp;
-     pacBuff[38] = p_ctemp[0];
-     pacBuff[39] = p_ctemp[1];
-
-     // GPS down velocity                             m/s
-     ltemp = System->gnss->VelDown/100;
-     itemp = (int)ltemp;
-     p_ctemp = &itemp;
-     pacBuff[40] = p_ctemp[0];
-     pacBuff[41] = p_ctemp[1];
-
-     // GPS Heading                                   deg e-5
-     p_ctemp = &System->gnss->Heading;
-     pacBuff[42] = p_ctemp[0];
-     pacBuff[43] = p_ctemp[1];
-     pacBuff[44] = p_ctemp[2];
-     pacBuff[45] = p_ctemp[3];
-
-     // Distance from Pad (m) (over ground) unsigned int, m
-//     p_ctemp =  &gnss_distToPad;
-//     pacBuff[46] = p_ctemp[0];
-//     pacBuff[47] = p_ctemp[1];
-
-     // Bearing to Pad (deg)               unsigned int, deg e-2
-//     p_ctemp = &gnss_padBearing;
-//     pacBuff[48] = p_ctemp[0];
-//     pacBuff[49] = p_ctemp[1];
-
+     // Description      bytes           type         units    
+     // GNSS Chipset      1              byte 
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.chipset), 1);index+=1;
+     // Altitude         4            float          m         
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.fAlt), 4);index+=4;
+     // Lattitude        4            float         deg 
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.fLat), 4);index+=4;
+     // Longitude        4            float         deg 
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.fLon), 4);index+=4;
+     // Satellites       1               byte        none
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.satellites), 1);index++;
+     // Lock             1               byte        boolean
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.lockStatus), 1);index++;
+     // VBus             2              uint         mV
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->Vbus), 2);index+=2;
+     // GPS speed (magnitude of vector sum)           cm/s
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.velocity), 4);index+=4;
+     // GPS down velocity                             cm/s
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.VelDown), 4);index+=4;
+     // GPS Heading                                   deg 
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.fHeading), 4);index+=4;
      // Horizontal accuracy estimate      unsigned long, mm
-     p_ctemp = &System->gnss->hAcc;
-     pacBuff[50] = p_ctemp[0];
-     pacBuff[51] = p_ctemp[1];
-     pacBuff[52] = p_ctemp[2];
-     pacBuff[53] = p_ctemp[3];
-
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.hAcc), 4);index+=4;
      // Vertical accuracy estimate        unsigned long, mm
-     p_ctemp = &System->gnss->vAcc;
-     pacBuff[54] = p_ctemp[0];
-     pacBuff[55] = p_ctemp[1];
-     pacBuff[56] = p_ctemp[2];
-     pacBuff[57] = p_ctemp[3];
-
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.vAcc), 4);index+=4;
      // GPS Ground speed                  unsigned in cm/s
-//     utemp = (unsigned int)gpsGroundSpeed/100;          // convert to m/s
-     utemp = 0;          // convert to m/s
-     p_ctemp = &utemp;
-     pacBuff[58] = p_ctemp[0];
-     pacBuff[59] = p_ctemp[1];
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->gnssMetrics.groundSpeed), 4);index+=4;
+     
+     // Motion & attitude metrics
+     //Accelerations
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.AccelX), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.AccelY), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.AccelZ), 4);index+=4;
+     // Velocities
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.VelX), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.VelY), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.VelZ), 4);index+=4;
+     // magnetic field
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.MagX), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.MagY), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.MagZ), 4);index+=4;
+     // Angles
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.Phi), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.Theta), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.Zeta), 4);index+=4;
+     // Angular rate 
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.PhiDot), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.ThetaDot), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.ZetaDot), 4);index+=4;
+     // Barometer
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.baroAltitude), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.baroPressure), 4);index+=4;
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->motioniMetrics.baroTemperature), 4);index+=4;
 
-     // State machine value                unsigned int  no units
-     p_ctemp = &System->state;
-     pacBuff[60] = p_ctemp[0];
-     pacBuff[61] = p_ctemp[1];
+     // Continuity status   1 byte
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->flightComputerStatus.continuity), 1);index+=1;
+     // Output Status       1 byte  
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->flightComputerStatus.outputs), 1);index+=1;
+     // State machine value unsigned int
+     memcpy(&Packet->payload[index], (unsigned char*)(&System->flightComputerStatus.state), 2);index+=2;
+     
 
      }
     case PAC_TYPE_GROUND_MOBILE: {
@@ -176,118 +143,7 @@ void BuildRadioPacket(packetDetailsType *Packet, telemetryConfigurationType *Sys
            // state            2    54, 55      unsigned int
            // checksum         1    56
 
-           p_ctemp = &System->inertial->AccelX;
-           Packet->payload[3] = p_ctemp[0];
-           Packet->payload[4] = p_ctemp[1];
-
-           p_ctemp = &System->inertial->AccelY;
-           Packet->payload[5] = p_ctemp[0];
-           Packet->payload[6] = p_ctemp[1];
-
-           p_ctemp = &System->inertial->AccelZ;
-           Packet->payload[7] = p_ctemp[0];
-           Packet->payload[8] = p_ctemp[1];
-
-           f_temp = System->inertial->Theta*100.0;
-           itemp = (int)f_temp;
-           p_ctemp = &itemp;
-           Packet->payload[9] = p_ctemp[0];
-           Packet->payload[10] = p_ctemp[1];
-
-           f_temp = System->inertial->Phi*100.0;
-           itemp = (int)f_temp;
-           p_ctemp = &itemp;
-           Packet->payload[11] = p_ctemp[0];
-           Packet->payload[12] = p_ctemp[1];
-
-           f_temp = System->inertial->Zeta*100.0;
-           itemp = (int)f_temp;
-           p_ctemp = &itemp;
-           Packet->payload[13] = p_ctemp[0];
-           Packet->payload[14] = p_ctemp[1];
-
-           p_ctemp = &System->inertial->Thetadot;
-           Packet->payload[15] = p_ctemp[0];
-           Packet->payload[16] = p_ctemp[1];
-
-           p_ctemp = &System->inertial->Phidot;
-           Packet->payload[17] = p_ctemp[0];
-           Packet->payload[18] = p_ctemp[1];
-
-           p_ctemp = &System->inertial->Zetadot;
-           Packet->payload[19] = p_ctemp[0];
-           Packet->payload[20] = p_ctemp[1];
-
-           p_ctemp = &System->inertial->MagX;
-           Packet->payload[21] = p_ctemp[0];
-           Packet->payload[22] = p_ctemp[1];
-
-           p_ctemp = &System->inertial->MagY;
-           Packet->payload[23] = p_ctemp[0];
-           Packet->payload[24] = p_ctemp[1];
-
-           p_ctemp = &System->inertial->MagZ;
-           Packet->payload[25] = p_ctemp[0];
-           Packet->payload[26] = p_ctemp[1];
-
-           p_ctemp = &System->gnss->Lat;
-           Packet->payload[27] = p_ctemp[0];
-           Packet->payload[28] = p_ctemp[1];
-           Packet->payload[29] = p_ctemp[2];
-           Packet->payload[30] = p_ctemp[3];
-
-           p_ctemp = &System->gnss->Lon;
-           Packet->payload[31] = p_ctemp[0];
-           Packet->payload[32] = p_ctemp[1];
-           Packet->payload[33] = p_ctemp[2];
-           Packet->payload[34] = p_ctemp[3];
-
-           p_ctemp = &System->gnss->Satellites;
-           Packet->payload[35] = p_ctemp[0];
-
-           p_ctemp = &System->gnss->lockStatus;
-           Packet->payload[36] = p_ctemp[0];
-
-           p_ctemp = &System->Vbus;
-           Packet->payload[37] = p_ctemp[0];
-
-           p_ctemp = &System->gnss->Velocity;
-           Packet->payload[38] = p_ctemp[0];
-           Packet->payload[39] = p_ctemp[1];
-           Packet->payload[40] = p_ctemp[2];
-           Packet->payload[41] = p_ctemp[3];
-
-           // GPS Heading                                   deg e-5
-           p_ctemp = &System->gnss->Heading;
-           Packet->payload[42] = p_ctemp[0];
-           Packet->payload[43] = p_ctemp[1];
-           Packet->payload[44] = p_ctemp[2];
-           Packet->payload[45] = p_ctemp[3];
-
-           // Horizontal accuracy estimate      unsigned long, mm
-           p_ctemp = &System->gnss->hAcc;
-           Packet->payload[46] = p_ctemp[0];
-           Packet->payload[47] = p_ctemp[1];
-           Packet->payload[48] = p_ctemp[2];
-           Packet->payload[49] = p_ctemp[3];
-
-           // Vertical accuracy estimate        unsigned long, mm
-           p_ctemp = &System->gnss->vAcc;
-           Packet->payload[50] = p_ctemp[0];
-           Packet->payload[51] = p_ctemp[1];
-           Packet->payload[52] = p_ctemp[2];
-           Packet->payload[53] = p_ctemp[3];
-
-           p_ctemp = &System->state;
-           Packet->payload[54] = p_ctemp[0];
-           Packet->payload[55] = p_ctemp[1];
-
-           // generate basic 1 byte checksum for payload
-           Packet->payload[56]=0;
-           for(i=0;i< Packet->length-1;i++){
-            Packet->payload[56] += Packet->payload[i];
-           }
-
+          
      break;
      }
 
@@ -430,13 +286,7 @@ void BuildRadioPacket(packetDetailsType *Packet, telemetryConfigurationType *Sys
 
      case PAC_TYPE_SYSTEM_STATUS : {
 
-           p_ctemp = &System->state;
-           Packet->payload[52] = p_ctemp[0];
-           Packet->payload[53] = p_ctemp[1];
-
-           p_ctemp = &System->Vbus;
-           Packet->payload[54] = p_ctemp[0];
-           Packet->payload[55] = p_ctemp[1];
+          
 
      break;
      }
@@ -453,15 +303,13 @@ void BuildRadioPacket(packetDetailsType *Packet, telemetryConfigurationType *Sys
      }
 
      }
-     // calculate checksum         1    last byte in payload
-     Packet->payload[Packet->length-1]=0;
-     for (i=0;i<Packet->length-1;i++) Packet->payload[Packet->length-1] += Packet->payload[i];
+     return index;
      
 }
 
-int ParseBinaryPacket(unsigned char *localbuf, packetDetailsType *Packet, telemetryConfigurationType *System){
+int ParseBinaryPacket(unsigned char *localbuf, packetDetailsType *Packet, systemType *System){
  unsigned char * p_byte;
- int i_temp, i;
+ int i_temp, i, index;
  float f_temp;
  
          // There is a packet ready then extract the payload !
@@ -469,18 +317,18 @@ int ParseBinaryPacket(unsigned char *localbuf, packetDetailsType *Packet, teleme
          Packet->validPacket =0;
 
          // Read in bytes common to all packet types
-         Packet->rssi = localbuf[0];
-
-         // Remote Device ID
-         p_byte = Packet->SourceID;
-         p_byte[0] = localbuf[1];
-         p_byte[1] = localbuf[2];
-         System->identity = Packet->SourceID;
-
-         // Packet type
-         Packet->Type = localbuf[3];
-
-         switch(Packet->Type){
+         for (i=0;i<256;i++) Packet->payload[i]=0; // blast old packet away
+          //-------------------------------------------------------------------
+          // Common bytes for all types
+          index=0;
+          memcpy((unsigned char*)(&System->identity), &Packet->payload[index], 2); // Identity of source system
+          index+=2;
+          memcpy((unsigned char*)(&Packet->sourceID), &Packet->payload[index], 2);   // Identity of source system
+          index+=2;
+          memcpy((unsigned char*)(&Packet->type), &Packet->payload[index], 1);
+          index+=1;
+         
+         switch(Packet->type){
 
          case  PAC_TYPE_GSE_FULL : {
               Packet->unhandledPacketType=0;
@@ -495,6 +343,7 @@ int ParseBinaryPacket(unsigned char *localbuf, packetDetailsType *Packet, teleme
          
          case PAC_TYPE_GROUND_MOBILE  : {  //
               Packet->unhandledPacketType=0;
+              /*
                // Format : LSB first
                // Description      bytes index     type         units
                // X accel          2    3,4        int          0.1 m/s/s
@@ -629,7 +478,7 @@ int ParseBinaryPacket(unsigned char *localbuf, packetDetailsType *Packet, teleme
                   Packet->validPacket=0;
                   
                Packet->newPacket = 1;
-
+               */     
           break;
          }
 
@@ -638,18 +487,76 @@ int ParseBinaryPacket(unsigned char *localbuf, packetDetailsType *Packet, teleme
 
          break;
          }
+         case PAC_TYPE_ROCKET: {
+
+               // Description      bytes           type         units    
+               // GNSS Chipset      1              byte 
+               memcpy((unsigned char*)(&System->gnssMetrics.chipset), &Packet->payload[index], 1);index+=1;
+               // Altitude         4            float          m         
+               memcpy((unsigned char*)(&System->gnssMetrics.fAlt), &Packet->payload[index], 4);index+=4;
+               // Lattitude        4            float         deg 
+               memcpy((unsigned char*)(&System->gnssMetrics.fLat), &Packet->payload[index], 4);index+=4;
+               // Longitude        4            float         deg 
+               memcpy((unsigned char*)(&System->gnssMetrics.fLon), &Packet->payload[index], 4);index+=4;
+               // Satellites       1               byte        none
+               memcpy((unsigned char*)(&System->gnssMetrics.satellites), &Packet->payload[index], 1);index++;
+               // Lock             1               byte        boolean
+               memcpy((unsigned char*)(&System->gnssMetrics.lockStatus), &Packet->payload[index], 1);index++;
+               // VBus             2              uint         mV
+               memcpy((unsigned char*)(&System->Vbus), &Packet->payload[index], 2);index+=2;
+               // GPS speed (magnitude of vector sum)           cm/s
+               memcpy((unsigned char*)(&System->gnssMetrics.velocity), &Packet->payload[index],4);index+=4;
+               // GPS down velocity                             cm/s
+               memcpy((unsigned char*)(&System->gnssMetrics.VelDown), &Packet->payload[index], 4);index+=4;
+               // GPS Heading                                   deg 
+               memcpy((unsigned char*)(&System->gnssMetrics.fHeading), &Packet->payload[index], 4);index+=4;
+               // Horizontal accuracy estimate      unsigned long, mm
+               memcpy((unsigned char*)(&System->gnssMetrics.hAcc), &Packet->payload[index], 4);index+=4;
+               // Vertical accuracy estimate        unsigned long, mm
+               memcpy((unsigned char*)(&System->gnssMetrics.vAcc), &Packet->payload[index], 4);index+=4;
+               // GPS Ground speed                  unsigned in cm/s
+               memcpy((unsigned char*)(&System->gnssMetrics.groundSpeed), &Packet->payload[index], 4);index+=4;
+               
+               // Motion & attitude metrics
+               //Accelerations
+               memcpy((unsigned char*)(&System->motioniMetrics.AccelX), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.AccelY), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.AccelZ), &Packet->payload[index], 4);index+=4;
+               // Velocities
+               memcpy((unsigned char*)(&System->motioniMetrics.VelX), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.VelY), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.VelZ), &Packet->payload[index], 4);index+=4;
+               // magnetic field
+               memcpy((unsigned char*)(&System->motioniMetrics.MagX), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.MagY), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.MagZ), &Packet->payload[index], 4);index+=4;
+               // Angles
+               memcpy((unsigned char*)(&System->motioniMetrics.Phi), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.Theta), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.Zeta), &Packet->payload[index], 4);index+=4;
+               // Angular rate 
+               memcpy((unsigned char*)(&System->motioniMetrics.PhiDot), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.ThetaDot), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.ZetaDot), &Packet->payload[index], 4);index+=4;
+               // Barometer
+               memcpy((unsigned char*)(&System->motioniMetrics.baroAltitude), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.baroPressure), &Packet->payload[index], 4);index+=4;
+               memcpy((unsigned char*)(&System->motioniMetrics.baroTemperature), &Packet->payload[index], 4);index+=4;
+
+               // Continuity status   1 byte
+               memcpy((unsigned char*)(&System->flightComputerStatus.continuity), &Packet->payload[index], 1);index+=1;
+               // Output Status       1 byte  
+               memcpy((unsigned char*)(&System->flightComputerStatus.outputs), &Packet->payload[index], 1);index+=1;
+               // State machine value unsigned int
+               memcpy((unsigned char*)(&System->flightComputerStatus.state), &Packet->payload[index], 2);index+=2;
+               Packet->newData=1;
+     } 
+
          default : {
                  // unrecognised pacekt type
                  Packet->unhandledPacketType=1;
-                 Packet->Type=3;
+                 Packet->validPacket=0;
          }
       } // end of packet type switch
-
-       // Checksum check
-       if (Packet->sentChecksum == Packet->checksum) {
-          Packet->validPacket = 1;
-       }
-       else {
-            Packet->validPacket = 0;
-       }
+     return Packet->unhandledPacketType;
 }

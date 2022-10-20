@@ -1,6 +1,7 @@
 // Telemetry related data structures
 // Common definitions used amongst multiple projects
 
+#include "radio_structs.h"
 #define telemetry_structures
 
 struct  motionMetricsType {
@@ -18,6 +19,7 @@ struct gnssMetricsType {
        long Lon;           // 1e-7 deg
        float fLat;         // deg
        float fLon;         // deg
+       float fAlt;         // altitude above sea level m
        float previousfLat; // deg
        float previousfLon; // deg
        long Alt;           // mm
@@ -35,12 +37,14 @@ struct gnssMetricsType {
        unsigned char newdata;  // boolean used to indicate data has been updated
 }; 
 
-struct PacketDetailsType {
+struct packetDetailsType {
     unsigned char type;
     unsigned int sourceID;
     unsigned int targetID;
     unsigned char length;
     unsigned char rssi;
+    float frssi;
+    float snr;
     unsigned int checksum;
     unsigned char validPacket;
     unsigned char unhandledPacketType;
@@ -49,7 +53,8 @@ struct PacketDetailsType {
 };
 
 struct telemetryConfigurationType {
-       unsigned int deviceID;                      // unique 16bit ID
+       unsigned int localDeviceID;                 // unique 16bit ID
+       unsigned int remoteDeviceID;                // unique 16bit ID
        unsigned char DeviceType;                   // 1: Flight computer
                                                    // 2. Base station
                                                    // 3: tracker
@@ -87,6 +92,7 @@ struct  systemType {
        gnssMetricsType gnssMetrics;
        motionMetricsType motioniMetrics;
        telemetryConfigurationType configuration;
+       radioModemType radioModemSettings;
 };
 
 struct trackingMetricsType {

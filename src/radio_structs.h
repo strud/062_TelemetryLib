@@ -24,10 +24,15 @@ struct radioModemType {
     unsigned char DeviceVersion;
     unsigned char Channel;
     float    BaseFreq;
+    float channelFrequency;
     unsigned char Band;
     int RxSensitivity;  // dBm
     char antGain;   // dB
     char txPower;   // dBm
+    float bandWidth; 
+    unsigned char spreadingFactor;  // LORA 
+    unsigned char codingRate;
+    unsigned char synchWord;   
 };
     
 
@@ -48,5 +53,4 @@ struct  LinkStatsType {
         unsigned char responseTimeouts;
         unsigned char linkOK;
         float packetsPerMinute;
-
 };
