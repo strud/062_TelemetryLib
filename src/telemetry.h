@@ -18,6 +18,9 @@
 #define PAC_TYPE_GSE_PENDANT_CMD  13
 #define PAC_TYPE_SYSTEM_QUERY   14
 #define PAC_TYPE_ROCKET         15
+#define PAC_TYPE_ROCKET_FULL    16   
+#define PAC_TYPE_ROCKET_LOCATION 17   
+ 
 
 
 #define PAC_TYPE_SYSTEM_STATUS       20
@@ -84,30 +87,55 @@ struct  motionMetricsType {
        float baroTemperature;
 };
 
+struct peripheralStatusType {
+  unsigned char imuDetected;
+  unsigned char imuOperational;
+  unsigned char baroSensorDetected;
+  unsigned char baroSensorOperational;
+  unsigned char pacDetected;
+  unsigned char pacOperational;
+  unsigned char magnetometerDetected;
+  unsigned char magnetometerOperational;
+  unsigned char gpsDetected;
+  unsigned char gpsOperational;
+  unsigned char radioModemDetected;
+  unsigned char radioModemOperational;
+  unsigned short int detectedBitfield;
+  unsigned short int operationalBitfield;
+};
+
+
 // Remote station parameters derived from gnss
 struct gnssMetricsType {
-       unsigned char chipset; // #define indicating GPS chipset used
-       unsigned char lockStatus;
+       unsigned char chipset;      // #defined values
+       unsigned int lockStatus;
        long Lat;           // 1e-7 deg
        long Lon;           // 1e-7 deg
-       float fLat;         // deg
-       float fLon;         // deg
-       float fAlt;         // altitude above sea level m
-       float previousfLat; // deg
-       float previousfLon; // deg
+       double dLat;         // deg
+       double dLon;         // deg
+       double dAlt;         // altitude above sea level m
+       double previousdLat; // deg
+       double previousdLon; // deg
        long Alt;           // mm
        long Heading;       // units 1e-5 deg
-       float fHeading;     // deg
-       long VelNorth;      // units cm/s
-       long VelEast;       // units cm/s
-       long VelDown;       // units cm/s
-       long velocity;      // units cm/s magnitude of velocity
-       long groundSpeed;   // units mm/s  
-       unsigned long hAcc; // units 0.1mm horizontal accuracy estimate
-       unsigned long vAcc; // units 0.1mm vertical accuracy estimate
+       double dHeading;     // deg
+       long VelNorth;      // units mm/s
+       long VelEast;       // units mm/s
+       long VelDown;       // units mm/s
+       double dVelNorth;   // units m/s
+       double dVelEast;    // units m/s
+       double dVelDown;    // units m/s
+       long velocity;      // units mm/s magnitude of velocity
+       double dvelocity;    // units m/s
+       long groundspeed;    // mm/s
+       double dGroundspeed; // m/s
+       unsigned long hAcc; // units mm horizontal accuracy estimate
+       double dhAcc;        // units m
+       unsigned long vAcc; // units mm vertical accuracy estimate
        long CurrentTime, PreviousTime; // units s since epoch
        unsigned char satellites;  // number of satellites
-       long hMSL;              // altitude or height above mean sea level 
+       long hMSL;              // altitude or height above mean sea level mm
+       double dhMSL;           // unit m    
        unsigned char newdata;  // boolean used to indicate data has been updated
 }; 
 
@@ -128,16 +156,23 @@ struct packetDetailsType {
 };
 
 struct flightComputerStatusType {
-    unsigned int state;
+    unsigned short int state;
     unsigned char continuity;
     unsigned char outputs;
     char          txtStatus[10];
 };
+struct fileSystemType {
+    unsigned short int numberOfFiles;     // number of files
+    unsigned short int installedCapacity; // total capacity
+    unsigned short int usedCapacity;      // used capacity
+    unsigned short int remainingCapacity; // remaining space
+};
+
 struct dvrStatusType {
-    unsigned int cardSize;    // card size MB
-    unsigned int remainingMem; // remaining memory MB
-    unsigned int state;        // state of camera     
-    unsigned char dvrType;     // type of dvr 
+    unsigned short int cardSize;    // card size MB
+    unsigned short int usedMem;     // used memory MB
+    unsigned short int state;       // state of camera     
+    unsigned char dvrType;          // type of dvr 
 };
 
 struct telemetryConfigurationType {
@@ -183,27 +218,30 @@ struct  systemType {
        radioModemType radioModemSettings;
        flightComputerStatusType flightComputerStatus;
        dvrStatusType dvrStatus;
+       fileSystemType fileSystemStatus;
+       peripheralStatusType peripheralStatus;
 };
 
 struct trackingMetricsType {
-       float bearing;       // deg
-       float magHeading;    // deg
-       float gnssHeading;   // deg
-       float newGnssHeading;   // deg
+       double bearing;       // deg
+       double magHeading;    // deg
+       double gnssHeading;   // deg
+       double newGnssHeading;   // deg
        unsigned long consecSampleCountAboveThresh; // number of gnss consecutive samples where ground speed > 2km/h
        char gnssHeadingValid;
-       float localGroundSpeed;  // m/s
-       float range;         // m
-       float elevation;     // deg
-       float bearingOffset; // deg
-       float TrackCommand;         // deg
-       float timeDelta;     // 
-       float bearingRate;   // deg/s
-       float elevationRate; // deg/s
-       float rangeRate;     // m/s
+       double localGroundSpeed;  // m/s
+       double range;         // m
+       double elevation;     // deg
+       double bearingOffset; // deg
+       double TrackCommand;         // deg
+       double timeDelta;     // 
+       double bearingRate;   // deg/s
+       double elevationRate; // deg/s
+       double rangeRate;     // m/s
+       double northOffset;  // deg offset from top of screen/box
 };
 
 unsigned int BuildRadioPacket(packetDetailsType *Packet, systemType *System, short int target);
-int ParseBinaryPacket(unsigned char *localbuf, packetDetailsType *Packet, telemetryConfigurationType *System);
-
-
+//int ParseBinaryPacket(packetDetailsType *Packet, systemType *System);
+int ParseBinaryPacket(unsigned char * payload, packetDetailsType *Packet, systemType *System);
+void updateGnssSIUnitMetrics(gnssMetricsType * gnssMetrics);

@@ -53,4 +53,6 @@ struct  LinkStatsType {
         unsigned char responseTimeouts;
         unsigned char linkOK;
         float packetsPerMinute;
+        float localSNR;
+        float remoteSNR;
 };
